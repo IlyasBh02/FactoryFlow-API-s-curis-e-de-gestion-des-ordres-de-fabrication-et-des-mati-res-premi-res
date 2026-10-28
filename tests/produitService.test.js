@@ -6,10 +6,12 @@ jest.mock('../src/repositories/produitRepository', () => ({
   create: jest.fn(),
   findById: jest.fn(),
   findPage: jest.fn(),
+  updateById: jest.fn(),
 }));
 
 jest.mock('../src/repositories/composantRepository', () => ({
   createMany: jest.fn(),
+  deleteByProduit: jest.fn(),
   findByProduit: jest.fn(),
   findByProduits: jest.fn(),
 }));
@@ -103,5 +105,43 @@ describe('produitService', () => {
     await expect(produitService.getById('missing')).rejects.toMatchObject({
       statusCode: 404,
     });
+  });
+
+  it('replaces product composition in the same transaction as its update', async () => {
+    const composition = [{ matiere: 'material-2', quantite: 3 }];
+    const productDocument = {
+      _id: 'product-1',
+      toJSON: () => ({ _id: 'product-1', nom: 'Updated Product' }),
+    };
+    matiereRepository.findByIds.mockResolvedValue([{ _id: 'material-2' }]);
+    produitRepository.updateById.mockResolvedValue(productDocument);
+    produitRepository.findById.mockResolvedValue(productDocument);
+    composantRepository.findByProduit.mockResolvedValue(composition);
+
+    await expect(
+      produitService.update('product-1', {
+        nom: 'Updated Product',
+        composition,
+      })
+    ).resolves.toEqual({
+      _id: 'product-1',
+      nom: 'Updated Product',
+      composition,
+    });
+
+    expect(produitRepository.updateById).toHaveBeenCalledWith(
+      'product-1',
+      { nom: 'Updated Product' },
+      'session'
+    );
+    expect(composantRepository.deleteByProduit).toHaveBeenCalledWith(
+      'product-1',
+      'session'
+    );
+    expect(composantRepository.createMany).toHaveBeenCalledWith(
+      [{ produit: 'product-1', matiere: 'material-2', quantite: 3 }],
+      'session'
+    );
+    expect(runInTransaction).toHaveBeenCalledTimes(1);
   });
 });
