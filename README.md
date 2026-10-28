@@ -138,7 +138,7 @@ docker compose down -v
 - **État de santé** : Docker vérifie périodiquement que l'API répond sur `/api/health`. `docker compose ps` indique si le backend est prêt.
 - **Persistance** : un volume nommé (`mongo_data`) conserve les données MongoDB après l'arrêt et le redémarrage des conteneurs.
 - **Dépendances** : après l'ajout d'un paquet npm, reconstruire avec `docker compose up --build --renew-anon-volumes`.
-- **Replica set** : MongoDB est configuré en replica set à un nœud, ce qui est nécessaire aux transactions (installation, démarrage d'un ordre). *(À compléter après la configuration du replica set.)*
+- **Replica set** : MongoDB est configuré en replica set à un nœud, ce qui est nécessaire aux transactions (installation, démarrage d'un ordre). Le healthcheck MongoDB initialise le replica set au premier démarrage.
 
 ## Installation via l'API
 
@@ -162,7 +162,7 @@ curl -X POST http://localhost:3000/api/installation \
 - Le compte Admin et l'état d'installation sont créés ensemble, ou pas du tout.
 - Une seconde installation est refusée (`409`). Des données invalides sont refusées sans état partiel.
 
-**3. Se connecter** *(route à compléter après l'implémentation de l'authentification)*
+**3. Se connecter**
 
 ```bash
 curl -X POST http://localhost:3000/api/auth/login \
